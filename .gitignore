@@ -1,0 +1,13 @@
+# Dependency folders
+node_modules/
+
+# Next.js build output
+.next/
+
+# Environment variables
+.env
+
+# System files (macOS or others)
+.DS_Store
+node_modules/
+.next/
