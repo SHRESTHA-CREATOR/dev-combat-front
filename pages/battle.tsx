@@ -24,14 +24,15 @@ export default function BattleRoom() {
   const [verdict, setVerdict] = useState("");
 
   useEffect(() => {
-    socket.on("startBattle", ({ question }) => {
-      setQuestion(question);
-    });
+  socket.on("startBattle", ({ question }) => {
+    console.log("🚀 Received question:", question); // ✅ Check if it's received
+    setQuestion(question);
+  });
 
-    return () => {
-      socket.off("startBattle");
-    };
-  }, []);
+  return () => {
+    socket.off("startBattle");
+  };
+}, []);
 
   const handleSubmit = async () => {
     try {
