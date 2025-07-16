@@ -5,7 +5,7 @@ node_modules/
 .next/
 
 # Environment variables
-.env
+.env.local
 
 # System files (macOS or others)
 .DS_Store

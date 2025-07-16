@@ -35,7 +35,7 @@ export default function BattleRoom() {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/ai/judge", {
+      const res = await axios.post("https://dev-combat-backend.onrender.com/api/ai/judge",  {
         code,
         language: "javascript",
         testCases: question?.test_cases || [],
