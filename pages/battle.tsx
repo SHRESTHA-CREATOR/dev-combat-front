@@ -4,7 +4,7 @@ import socket from "../utils/socket";
 import axios from "axios";
 import AIFeedback from "../components/AIFeedback";
 import Timer from "../components/timer";
-import CodeEditor from "../components/CodeEditor"; // ✅ moved to top
+import CodeEditor from "../components/CodeEditor";
 
 type QuestionType = {
   _id: string;
@@ -22,48 +22,76 @@ export default function BattleRoom() {
   const [question, setQuestion] = useState<QuestionType | null>(null);
   const [code, setCode] = useState("// Write your code here...");
   const [verdict, setVerdict] = useState("");
+  const [waiting, setWaiting] = useState(true); // 🔵 Waiting initially true
 
   useEffect(() => {
-  socket.on("startBattle", ({ question }) => {
-    console.log("🚀 Received question:", question); // ✅ Check if it's received
-    setQuestion(question);
-  });
+    if (!roomId) return;
 
-  return () => {
-    socket.off("startBattle");
-  };
-}, []);
+    // Join room socket event
+    socket.emit("joinRoom", roomId);
+
+    socket.on("waiting", () => {
+      console.log("🕓 Waiting for opponent...");
+      setWaiting(true);
+    });
+
+    socket.on("startBattle", ({ question }) => {
+      console.log("🚀 Battle started, received question:", question);
+      setQuestion(question);
+      setWaiting(false);
+    });
+
+    return () => {
+      socket.off("waiting");
+      socket.off("startBattle");
+    };
+  }, [roomId]);
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post("https://dev-combat-backend.onrender.com/api/ai/judge",  {
-        code,
-        language: "javascript",
-        testCases: question?.test_cases || [],
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ai/judge`,
+        {
+          code,
+          language: "javascript",
+          testCases: question?.test_cases || [],
+        }
+      );
       setVerdict(res.data.verdict);
     } catch (err) {
-      console.error("Error judging code:", err);
+      console.error("❌ Error judging code:", err);
       setVerdict("❌ Failed to judge code");
     }
   };
+
+  if (waiting) {
+    return (
+      <div className="flex items-center justify-center h-screen text-xl text-gray-700">
+        ⏳ Connected to room {roomId} — Waiting for opponent...
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="flex items-center justify-center h-screen text-lg text-gray-500">
+        Loading question...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <h1 className="text-2xl font-bold mb-4">🚀 Battle Room: {roomId}</h1>
 
-      {question ? (
-        <div className="bg-white p-4 rounded shadow-md mb-4 max-w-3xl mx-auto">
-          <h2 className="text-xl font-semibold">{question.title}</h2>
-          <p className="text-gray-800 whitespace-pre-line">{question.description}</p>
-          <div className="mt-2 text-sm text-gray-700">
-            <strong>Input:</strong> {question.input_format} <br />
-            <strong>Output:</strong> {question.output_format}
-          </div>
+      <div className="bg-white p-4 rounded shadow-md mb-4 max-w-3xl mx-auto">
+        <h2 className="text-xl font-semibold">{question.title}</h2>
+        <p className="text-gray-800 whitespace-pre-line">{question.description}</p>
+        <div className="mt-2 text-sm text-gray-700">
+          <strong>Input:</strong> {question.input_format} <br />
+          <strong>Output:</strong> {question.output_format}
         </div>
-      ) : (
-        <p className="text-gray-600 text-center">Loading question...</p>
-      )}
+      </div>
 
       <Timer
         duration={300} // 5 minutes
@@ -73,10 +101,9 @@ export default function BattleRoom() {
         }}
       />
 
-      {/* ✅ Code Editor Section */}
       <CodeEditor code={code} setCode={setCode} />
 
-      <div className="flex justify-center">
+      <div className="flex justify-center my-4">
         <button
           onClick={handleSubmit}
           className="px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700"
@@ -85,8 +112,8 @@ export default function BattleRoom() {
         </button>
       </div>
 
-      {/* Verdict Display */}
       <AIFeedback verdict={verdict} />
     </div>
   );
 }
+

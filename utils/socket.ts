@@ -1,7 +1,14 @@
 // frontend/utils/socket.ts
-import { io } from "socket.io-client";
+// utils/socket.ts
+import { io, Socket } from "socket.io-client";
 
-const socket = io("https://dev-combat-backend.onrender.com"); // use your backend URL in production
+let socket: Socket;
+
+if (!socket) {
+  socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
+    transports: ["websocket"], // force websocket to avoid polling issues
+  });
+}
+
 export default socket;
-
 
